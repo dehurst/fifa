@@ -1,4 +1,4 @@
-<title>Couch Cup</title>
+<title>FIFA Tracker</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@600;700;800&family=Figtree:wght@400;500;600;700&display=swap">
@@ -110,7 +110,7 @@ label.f input,label.f select{width:100%}
   <header class="top">
     <div>
       <div class="eyebrow">Family FIFA league</div>
-      <h1>Couch Cup</h1>
+      <h1>FIFA Tracker</h1>
     </div>
     <div style="display:flex;gap:8px">
       <button id="playersBtn" class="w" type="button">Players</button>
@@ -521,7 +521,7 @@ const END='</'+'script>';
 function buildDoc(next){
   const json=JSON.stringify(next).replace(/</g,"\\u003c");
   return '<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>'+RESET+'</style></head><body>'
-    +'\n<title>Couch Cup</title>\n<meta name="claude:viewport-fit-sides" content="cover">\n<link rel="preconnect" href="https://fonts.googleapis.com">\n<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@600;700;800&family=Figtree:wght@400;500;600;700&display=swap">\n'
+    +'\n<title>FIFA Tracker</title>\n<meta name="claude:viewport-fit-sides" content="cover">\n<link rel="preconnect" href="https://fonts.googleapis.com">\n<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@600;700;800&family=Figtree:wght@400;500;600;700&display=swap">\n'
     +'<style id="css">'+CSS_SRC+'</style>\n<template id="shell">'+SHELL_SRC+'</template>\n<div id="root" class="ro"></div>\n'
     +'<script type="application/json" id="data">'+json+END+'\n<script id="app">'+APP_SRC+END+'\n</body></html>';
 }
