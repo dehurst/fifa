@@ -1,0 +1,525 @@
+<title>Couch Cup</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@600;700;800&family=Figtree:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: one column scoreboard header, tabbed panels, bottom-sheet match form. */
+:root{
+  --bg:#eef2ee; --surface:#ffffff; --sunk:#e3e9e4; --line:#cfd8d1;
+  --ink:#14211b; --muted:#5b6b62; --pitch:#1f6b45; --pitch-ink:#ffffff;
+  --amber:#c98a0b; --win:#1f7a4c; --draw:#7a7f86; --loss:#b23a32;
+  --display:"Saira Condensed","Arial Narrow",system-ui,sans-serif;
+  --body:"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f1714; --surface:#17221d; --sunk:#111a16; --line:#2a3a32;
+  --ink:#e6eee9; --muted:#93a59b; --pitch:#2f8f5f; --pitch-ink:#ffffff;
+  --amber:#e0a93a; --win:#45b47a; --draw:#9aa0a6; --loss:#e0685e; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1714; --surface:#17221d; --sunk:#111a16; --line:#2a3a32;
+  --ink:#e6eee9; --muted:#93a59b; --pitch:#2f8f5f; --pitch-ink:#ffffff;
+  --amber:#e0a93a; --win:#45b47a; --draw:#9aa0a6; --loss:#e0685e; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.45}
+.wrap{max-width:880px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 60px}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0;letter-spacing:.01em}
+h1{font-size:40px;font-weight:800;line-height:1;text-transform:uppercase}
+h2{font-size:22px;font-weight:700;text-transform:uppercase}
+.num{font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+.eyebrow{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+header.top{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+button,.btn{font:inherit;font-weight:600;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:9px 14px;cursor:pointer}
+button.primary{background:var(--pitch);color:var(--pitch-ink);border-color:var(--pitch)}
+button.danger{color:var(--loss)}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+button:disabled{opacity:.55;cursor:default}
+.tabs{display:flex;gap:4px;overflow-x:auto;border-bottom:1px solid var(--line);margin-bottom:18px;scrollbar-width:none}
+.tabs button{border:none;background:none;border-radius:0;padding:10px 12px;color:var(--muted);border-bottom:3px solid transparent;white-space:nowrap}
+.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--pitch)}
+.panel{display:grid;gap:18px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;min-width:0}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+th,td{padding:8px 8px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+th:first-child,td:first-child{text-align:left}
+tr:last-child td{border-bottom:none}
+.form{display:inline-flex;gap:3px}
+.chip{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:5px;font-size:11px;font-weight:700;color:#fff}
+.W{background:var(--win)}.D{background:var(--draw)}.L{background:var(--loss)}
+.leader{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.pcard{display:grid;gap:6px}
+.pcard .big{font-family:var(--display);font-size:34px;font-weight:800;line-height:1}
+.pairs{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}
+.h2h .bar{display:flex;height:10px;border-radius:5px;overflow:hidden;background:var(--sunk);margin:10px 0 6px}
+.h2h .names{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.h2h .score{font-family:var(--display);font-size:30px;font-weight:800}
+/* match log */
+.match{display:grid;gap:10px}
+.mrow{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px}
+.side{min-width:0}
+.side.r{text-align:right}
+.side .team{font-family:var(--display);font-size:20px;font-weight:700;text-transform:uppercase;line-height:1.1;overflow-wrap:anywhere}
+.board{font-family:var(--display);font-size:30px;font-weight:800;background:var(--pitch);color:var(--pitch-ink);border-radius:8px;padding:2px 12px;white-space:nowrap}
+.mmeta{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:13px}
+.mactions{display:flex;gap:8px;flex-wrap:wrap}
+.mactions button{padding:6px 10px;font-size:13px}
+.statgrid{display:grid;grid-template-columns:1fr auto 1fr;gap:4px 10px;font-size:14px}
+.statgrid .l{text-align:left}.statgrid .c{text-align:center;color:var(--muted)}.statgrid .rr{text-align:right}
+.statgrid .best{font-weight:700}
+/* charts */
+.chartbox svg{width:100%;height:auto;display:block}
+.controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+select,input,textarea{font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 10px;min-width:0}
+.legend{display:flex;gap:14px;font-size:13px;color:var(--muted);flex-wrap:wrap}
+.legend i{display:inline-block;width:14px;height:3px;vertical-align:middle;margin-right:5px;border-radius:2px}
+.empty{padding:28px 16px;text-align:center;color:var(--muted)}
+.banner{background:var(--sunk);border:1px dashed var(--line);border-radius:12px;padding:12px 14px;font-size:14px}
+/* sheet */
+dialog{border:none;padding:0;background:transparent;max-width:none;max-height:none;width:100%;height:100%}
+dialog::backdrop{background:rgba(5,12,9,.55)}
+.sheet{background:var(--bg);color:var(--ink);max-width:640px;margin:0 auto;min-height:100%;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:calc(16px + env(safe-area-inset-top,0px)) calc(24px + env(safe-area-inset-bottom,0px));display:grid;gap:16px;align-content:start}
+@media (min-width:700px){dialog{height:auto}.sheet{min-height:0;margin:5vh auto;border-radius:16px;border:1px solid var(--line)}}
+.sheet header{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.who{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.who fieldset{border:1px solid var(--line);border-radius:12px;padding:12px;display:grid;gap:8px;margin:0;min-width:0;background:var(--surface)}
+.who legend{font-family:var(--display);font-weight:700;text-transform:uppercase;padding:0 4px}
+label.f{display:grid;gap:4px;font-size:13px;color:var(--muted);font-weight:600}
+label.f input,label.f select{width:100%}
+.goals{font-family:var(--display);font-size:28px;font-weight:800;text-align:center}
+.sform{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:6px 8px;align-items:center}
+.sform input{text-align:center;width:100%}
+.sform .c{font-size:13px;text-align:center;color:var(--muted);font-weight:600}
+.photo{display:grid;gap:8px}
+.photo .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.status{font-size:14px}
+.status.err{color:var(--loss)}
+.flag{outline:2px solid var(--amber)}
+.inline-confirm{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:14px}
+.players{display:grid;gap:8px}
+.players .prow{display:flex;gap:8px}
+.players input{flex:1}
+@media (max-width:520px){.who{grid-template-columns:1fr}h1{font-size:34px}}
+@media (prefers-reduced-motion:no-preference){.tabs button{transition:color .15s,border-color .15s}}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="eyebrow">Family FIFA league</div>
+      <h1>Couch Cup</h1>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button id="playersBtn" type="button">Players</button>
+      <button id="addBtn" class="primary" type="button">Add match</button>
+    </div>
+  </header>
+
+  <div id="notice" class="banner" hidden></div>
+
+  <nav class="tabs" role="tablist">
+    <button role="tab" data-tab="standings" aria-selected="true">Standings</button>
+    <button role="tab" data-tab="h2h" aria-selected="false">Head to head</button>
+    <button role="tab" data-tab="teams" aria-selected="false">Teams</button>
+    <button role="tab" data-tab="stats" aria-selected="false">Stats</button>
+    <button role="tab" data-tab="matches" aria-selected="false">Matches</button>
+  </nav>
+
+  <section id="tab-standings" class="panel"></section>
+  <section id="tab-h2h" class="panel" hidden></section>
+  <section id="tab-teams" class="panel" hidden></section>
+  <section id="tab-stats" class="panel" hidden></section>
+  <section id="tab-matches" class="panel" hidden></section>
+</div>
+
+<dialog id="matchDlg">
+  <form class="sheet" id="matchForm">
+    <header>
+      <h2 id="formTitle">Add match</h2>
+      <button type="button" id="closeForm">Close</button>
+    </header>
+
+    <div class="card photo" id="photoBox">
+      <div><strong>Fill from photos</strong> <span class="muted">(optional)</span></div>
+      <div class="muted" style="font-size:14px">Pick the final-score photo and the stats summary photo. Claude reads them and fills the form. Check the numbers before saving.</div>
+      <div class="row">
+        <input type="file" id="photoInput" accept="image/*" multiple>
+        <button type="button" id="readBtn">Read photos</button>
+      </div>
+      <div class="status" id="photoStatus" aria-live="polite"></div>
+    </div>
+
+    <label class="f">Date <input type="date" id="f_date" required></label>
+
+    <div class="who">
+      <fieldset>
+        <legend>Home (left)</legend>
+        <label class="f">Player <select id="f_hp" required></select></label>
+        <label class="f">Team <input id="f_ht" list="teamList" required autocomplete="off"></label>
+        <label class="f">Goals <input id="f_hg" class="goals" type="number" min="0" inputmode="numeric" required></label>
+      </fieldset>
+      <fieldset>
+        <legend>Away (right)</legend>
+        <label class="f">Player <select id="f_ap" required></select></label>
+        <label class="f">Team <input id="f_at" list="teamList" required autocomplete="off"></label>
+        <label class="f">Goals <input id="f_ag" class="goals" type="number" min="0" inputmode="numeric" required></label>
+      </fieldset>
+    </div>
+    <datalist id="teamList"></datalist>
+
+    <div class="card">
+      <div class="eyebrow" style="margin-bottom:10px">Match stats (all optional)</div>
+      <div class="sform" id="statForm"></div>
+    </div>
+
+    <label class="f">Notes <textarea id="f_notes" rows="2" placeholder="Last-minute winner, rage quit, etc."></textarea></label>
+
+    <div class="status" id="formStatus" aria-live="polite"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button type="button" id="cancelForm">Cancel</button>
+      <button type="submit" class="primary" id="saveBtn">Save match</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="playersDlg">
+  <form class="sheet" id="playersForm">
+    <header><h2>Players</h2><button type="button" id="closePlayers">Close</button></header>
+    <div class="muted" style="font-size:14px">Rename anyone here. Past matches keep their link to the player.</div>
+    <div class="players" id="playerRows"></div>
+    <button type="button" id="addPlayer">Add a player</button>
+    <label class="f">PlayStation name that always means a certain player
+      <span style="display:flex;gap:8px"><input id="tagName" placeholder="BuckSavage1979" style="flex:1"><select id="tagPlayer"></select></span>
+    </label>
+    <div class="muted" style="font-size:13px">Shared accounts (like stately_woolly71) stay unmapped, so you pick the player each time.</div>
+    <div class="status" id="playersStatus"></div>
+    <div style="display:flex;justify-content:flex-end"><button type="submit" class="primary">Save players</button></div>
+  </form>
+</dialog>
+
+<script>
+const STATS = [
+  {k:"possession",label:"Possession %",hi:true},
+  {k:"recovery",label:"Ball recovery time (s)",hi:false,dec:true},
+  {k:"shots",label:"Shots",hi:true},
+  {k:"xg",label:"Expected goals",hi:true,dec:true},
+  {k:"passes",label:"Passes",hi:true},
+  {k:"tackles",label:"Tackles",hi:true},
+  {k:"tacklesWon",label:"Tackles won",hi:true},
+  {k:"interceptions",label:"Interceptions",hi:true},
+  {k:"saves",label:"Saves",hi:true},
+  {k:"fouls",label:"Fouls committed",hi:false},
+  {k:"offsides",label:"Offsides",hi:false},
+  {k:"corners",label:"Corners",hi:true},
+  {k:"freeKicks",label:"Free kicks",hi:true},
+  {k:"penalties",label:"Penalty kicks",hi:true},
+  {k:"yellows",label:"Yellow cards",hi:false},
+  {k:"reds",label:"Red cards",hi:false},
+  {k:"dribblePct",label:"Dribble success %",hi:true},
+  {k:"shotAccPct",label:"Shot accuracy %",hi:true},
+  {k:"passAccPct",label:"Pass accuracy %",hi:true},
+];
+const DEFAULT_SETTINGS = {players:[{id:"dad",name:"Dad"},{id:"asher",name:"Asher"},{id:"bennett",name:"Bennett"}],tags:{"bucksavage1979":"asher"}};
+
+let db=null, sample=null;
+let settings = DEFAULT_SETTINGS;
+let matches = [];
+let loaded = false;
+let editingId = null;
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const pname = id => (settings.players.find(p=>p.id===id)||{}).name || id || "?";
+const fmt = (v,dec) => v==null||v==="" ? "–" : (dec ? (+v).toFixed(2).replace(/\.?0+$/,"") : String(Math.round(+v*10)/10));
+const res = (gf,ga) => gf>ga?"W":gf<ga?"L":"D";
+
+function sorted(){ return [...matches].sort((a,b)=> (b.date||"").localeCompare(a.date||"") || (b.createdAt||0)-(a.createdAt||0)); }
+
+/* ---------- views per player ---------- */
+// Each match produced twice: once from each side's point of view.
+function views(){
+  const out=[];
+  for(const m of sorted()){
+    const h=m.home||{}, a=m.away||{};
+    out.push({m,me:h.player,opp:a.player,team:h.team,oppTeam:a.team,gf:+h.goals,ga:+a.goals,st:h.stats||{},ost:a.stats||{}});
+    out.push({m,me:a.player,opp:h.player,team:a.team,oppTeam:h.team,gf:+a.goals,ga:+h.goals,st:a.stats||{},ost:h.stats||{}});
+  }
+  return out;
+}
+function tally(list){
+  const t={P:0,W:0,D:0,L:0,GF:0,GA:0};
+  for(const v of list){t.P++;t[res(v.gf,v.ga)]++;t.GF+=v.gf;t.GA+=v.ga}
+  t.GD=t.GF-t.GA; t.pct=t.P?Math.round(t.W/t.P*100):0; t.pts=t.W*3+t.D;
+  return t;
+}
+const formChips = list => `<span class="form">${list.slice(0,5).map(v=>{const r=res(v.gf,v.ga);return `<span class="chip ${r}" title="${esc(r)} ${v.gf}-${v.ga} vs ${esc(pname(v.opp))}">${r}</span>`}).join("")}</span>`;
+const gd = n => (n>0?"+":"")+n;
+
+function emptyState(){
+  return `<div class="card empty"><h2 style="margin-bottom:6px">No matches yet</h2>Tap <strong>Add match</strong> after your next game. Upload the two end-of-match photos and the form fills itself.</div>`;
+}
+
+function renderStandings(){
+  const el=$("#tab-standings");
+  if(!matches.length){el.innerHTML=emptyState();return}
+  const V=views();
+  const rows=settings.players.map(p=>{const l=V.filter(v=>v.me===p.id);return {p,l,t:tally(l)}}).filter(r=>r.t.P)
+    .sort((a,b)=>b.t.pts-a.t.pts||b.t.GD-a.t.GD||b.t.GF-a.t.GF);
+  el.innerHTML=`
+  <div class="leader">${rows.map(r=>`
+    <div class="card pcard">
+      <div class="eyebrow">${esc(r.p.name)}</div>
+      <div class="big num">${r.t.W}-${r.t.D}-${r.t.L}</div>
+      <div class="muted num" style="font-size:14px">${r.t.pct}% wins · ${r.t.GF} scored · ${r.t.GA} conceded</div>
+      ${formChips(r.l)}
+    </div>`).join("")}</div>
+  <div class="card"><h2 style="margin-bottom:8px">Table</h2><div class="scroll"><table>
+    <thead><tr><th>Player</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GF</th><th>GA</th><th>GD</th><th>Pts</th><th>Form</th></tr></thead>
+    <tbody>${rows.map(r=>`<tr><td><strong>${esc(r.p.name)}</strong></td><td>${r.t.P}</td><td>${r.t.W}</td><td>${r.t.D}</td><td>${r.t.L}</td><td>${r.t.GF}</td><td>${r.t.GA}</td><td>${gd(r.t.GD)}</td><td><strong>${r.t.pts}</strong></td><td>${formChips(r.l)}</td></tr>`).join("")}</tbody>
+  </table></div><div class="muted" style="font-size:13px;margin-top:8px">3 points for a win, 1 for a draw.</div></div>`;
+}
+
+function renderH2H(){
+  const el=$("#tab-h2h");
+  if(!matches.length){el.innerHTML=emptyState();return}
+  const V=views(); const ps=settings.players; const cards=[];
+  for(let i=0;i<ps.length;i++)for(let j=i+1;j<ps.length;j++){
+    const a=ps[i],b=ps[j]; const l=V.filter(v=>v.me===a.id&&v.opp===b.id); if(!l.length)continue;
+    const t=tally(l); const w=t.W/t.P*100,d=t.D/t.P*100;
+    cards.push(`<div class="card h2h">
+      <div class="names"><strong>${esc(a.name)}</strong><span class="score num">${t.W}<span class="muted" style="font-size:20px"> – ${t.D} – </span>${t.L}</span><strong>${esc(b.name)}</strong></div>
+      <div class="bar"><span style="width:${w}%;background:var(--win)"></span><span style="width:${d}%;background:var(--draw)"></span><span style="flex:1;background:var(--loss)"></span></div>
+      <div class="names muted num" style="font-size:13px"><span>${t.W} wins · ${t.GF} goals</span><span>${t.D} draws</span><span>${t.L} wins · ${t.GA} goals</span></div>
+      <div style="margin-top:10px;font-size:13px" class="muted">Last 5 for ${esc(a.name)}: ${formChips(l)}</div>
+    </div>`);
+  }
+  el.innerHTML=`<div class="pairs">${cards.join("")||'<div class="card empty">No head-to-head games yet.</div>'}</div>`;
+}
+
+function renderTeams(){
+  const el=$("#tab-teams");
+  if(!matches.length){el.innerHTML=emptyState();return}
+  const V=views();
+  const byPlayer=settings.players.map(p=>{
+    const mine=V.filter(v=>v.me===p.id); if(!mine.length)return "";
+    const teams={}; mine.forEach(v=>(teams[v.team]=teams[v.team]||[]).push(v));
+    const rows=Object.entries(teams).map(([t,l])=>({t,x:tally(l)})).sort((a,b)=>b.x.P-a.x.P||b.x.pct-a.x.pct);
+    return `<div class="card"><h2 style="margin-bottom:8px">${esc(p.name)}'s teams</h2><div class="scroll"><table>
+      <thead><tr><th>Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GF</th><th>GA</th><th>Win %</th></tr></thead>
+      <tbody>${rows.map(r=>`<tr><td>${esc(r.t)}</td><td>${r.x.P}</td><td>${r.x.W}</td><td>${r.x.D}</td><td>${r.x.L}</td><td>${r.x.GF}</td><td>${r.x.GA}</td><td>${r.x.pct}%</td></tr>`).join("")}</tbody></table></div></div>`;
+  }).join("");
+  const teams={}; V.forEach(v=>(teams[v.team]=teams[v.team]||[]).push(v));
+  const all=Object.entries(teams).map(([t,l])=>({t,x:tally(l)})).sort((a,b)=>b.x.P-a.x.P||b.x.pct-a.x.pct);
+  el.innerHTML=byPlayer+`<div class="card"><h2 style="margin-bottom:8px">All teams</h2><div class="scroll"><table>
+    <thead><tr><th>Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>Win %</th></tr></thead>
+    <tbody>${all.map(r=>`<tr><td>${esc(r.t)}</td><td>${r.x.P}</td><td>${r.x.W}</td><td>${r.x.D}</td><td>${r.x.L}</td><td>${r.x.pct}%</td></tr>`).join("")}</tbody></table></div></div>`;
+}
+
+let statPick={player:null,stat:"xg"};
+function renderStats(){
+  const el=$("#tab-stats");
+  if(!matches.length){el.innerHTML=emptyState();return}
+  const V=views();
+  const active=settings.players.filter(p=>V.some(v=>v.me===p.id));
+  if(!statPick.player||!active.some(p=>p.id===statPick.player)) statPick.player=active[0]?.id;
+  const avg=(l,k,src="st")=>{const xs=l.map(v=>v[src][k]).filter(x=>x!=null&&x!=="").map(Number);return xs.length?xs.reduce((a,b)=>a+b,0)/xs.length:null};
+  const table=`<div class="card"><h2 style="margin-bottom:8px">Per-game averages</h2><div class="scroll"><table>
+    <thead><tr><th>Stat</th>${active.map(p=>`<th>${esc(p.name)}</th>`).join("")}</tr></thead>
+    <tbody>${STATS.map(s=>{const vals=active.map(p=>avg(V.filter(v=>v.me===p.id),s.k));
+      const real=vals.filter(v=>v!=null); const best=real.length>1?(s.hi?Math.max(...real):Math.min(...real)):null;
+      return `<tr><td>${esc(s.label)}</td>${vals.map(v=>`<td${v!=null&&v===best?' style="font-weight:700"':''}>${fmt(v,true)}</td>`).join("")}</tr>`}).join("")}</tbody>
+  </table></div><div class="muted" style="font-size:13px;margin-top:8px">Bold marks the best average. Only games with that stat logged count.</div></div>`;
+
+  const l=V.filter(v=>v.me===statPick.player).slice().reverse();
+  const s=STATS.find(x=>x.k===statPick.stat);
+  const pts=l.map((v,i)=>({i,me:v.st[s.k],op:v.ost[s.k],v})).filter(p=>p.me!=null&&p.me!=="");
+  el.innerHTML=`<div class="card chartbox">
+    <h2 style="margin-bottom:10px">Trend</h2>
+    <div class="controls" style="margin-bottom:12px">
+      <select id="sp_player" aria-label="Player">${active.map(p=>`<option value="${p.id}"${p.id===statPick.player?" selected":""}>${esc(p.name)}</option>`).join("")}</select>
+      <select id="sp_stat" aria-label="Stat">${STATS.map(x=>`<option value="${x.k}"${x.k===statPick.stat?" selected":""}>${esc(x.label)}</option>`).join("")}</select>
+    </div>
+    ${pts.length?chart(pts,s):'<div class="empty">No games with this stat logged yet.</div>'}
+    <div class="legend"><span><i style="background:var(--pitch)"></i>${esc(pname(statPick.player))}</span><span><i style="background:var(--muted)"></i>Opponent in same game</span></div>
+  </div>`+table;
+  $("#sp_player").onchange=e=>{statPick.player=e.target.value;renderStats()};
+  $("#sp_stat").onchange=e=>{statPick.stat=e.target.value;renderStats()};
+}
+function chart(pts,s){
+  const W=640,H=240,L=44,R=14,T=14,B=30;
+  const vals=pts.flatMap(p=>[+p.me,p.op!=null&&p.op!==""?+p.op:null]).filter(v=>v!=null);
+  let lo=Math.min(0,...vals),hi=Math.max(...vals); if(hi===lo)hi=lo+1;
+  const n=pts.length, x=i=>n===1?(L+(W-L-R)/2):L+i*(W-L-R)/(n-1), y=v=>T+(H-T-B)*(1-(v-lo)/(hi-lo));
+  const ticks=[lo,(lo+hi)/2,hi];
+  const line=(key,col,dash)=>{const p=pts.map((q,i)=>q[key]==null||q[key]===""?null:[x(i),y(+q[key])]).filter(Boolean);
+    return p.length?`<polyline fill="none" stroke="${col}" stroke-width="2.5" ${dash?'stroke-dasharray="5 5"':''} points="${p.map(a=>a.join(",")).join(" ")}"/>`+p.map((a,i)=>`<circle cx="${a[0]}" cy="${a[1]}" r="${key==="me"&&i===p.length-1?5:3.5}" fill="${col}"/>`).join(""):""};
+  const every=Math.max(1,Math.ceil(n/8));
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(s.label)} over time">
+    ${ticks.map(t=>`<line x1="${L}" x2="${W-R}" y1="${y(t)}" y2="${y(t)}" stroke="var(--line)"/><text x="${L-8}" y="${y(t)+4}" text-anchor="end" font-size="12" fill="var(--muted)">${fmt(t,s.dec)}</text>`).join("")}
+    ${pts.map((p,i)=>i%every===0||i===n-1?`<text x="${x(i)}" y="${H-8}" text-anchor="middle" font-size="11" fill="var(--muted)">${esc((p.v.m.date||"").slice(5).replace("-","/"))}</text>`:"").join("")}
+    ${line("op","var(--muted)",true)}${line("me","var(--pitch)",false)}
+  </svg>`;
+}
+
+function renderMatches(){
+  const el=$("#tab-matches");
+  if(!matches.length){el.innerHTML=emptyState();return}
+  el.innerHTML=sorted().map(m=>{
+    const h=m.home||{},a=m.away||{};
+    const hasStats=STATS.some(s=>(h.stats||{})[s.k]!=null||(a.stats||{})[s.k]!=null);
+    const statRows=STATS.filter(s=>(h.stats||{})[s.k]!=null||(a.stats||{})[s.k]!=null).map(s=>{
+      const hv=(h.stats||{})[s.k],av=(a.stats||{})[s.k];
+      const hb=hv!=null&&av!=null&&(s.hi?+hv>+av:+hv<+av), ab=hv!=null&&av!=null&&(s.hi?+av>+hv:+av<+hv);
+      return `<span class="l num${hb?" best":""}">${fmt(hv,s.dec)}</span><span class="c">${esc(s.label)}</span><span class="rr num${ab?" best":""}">${fmt(av,s.dec)}</span>`}).join("");
+    return `<div class="card match" data-id="${esc(m.id)}">
+      <div class="mmeta muted"><span>${esc(m.date||"")}</span></div>
+      <div class="mrow">
+        <div class="side"><div class="team">${esc(h.team)}</div><div class="muted">${esc(pname(h.player))}</div></div>
+        <div class="board num">${+h.goals} – ${+a.goals}</div>
+        <div class="side r"><div class="team">${esc(a.team)}</div><div class="muted">${esc(pname(a.player))}</div></div>
+      </div>
+      ${m.notes?`<div style="font-size:14px">${esc(m.notes)}</div>`:""}
+      ${hasStats?`<details><summary class="muted" style="cursor:pointer;font-size:14px">Match stats</summary><div class="statgrid" style="margin-top:10px">${statRows}</div></details>`:""}
+      <div class="mactions"><button type="button" data-edit="${esc(m.id)}">Edit</button><span class="delwrap"><button type="button" class="danger" data-del="${esc(m.id)}">Delete</button></span></div>
+    </div>`}).join("");
+  el.querySelectorAll("[data-edit]").forEach(b=>b.onclick=()=>openForm(matches.find(m=>m.id===b.dataset.edit)));
+  el.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>{
+    const wrap=b.parentElement;
+    wrap.innerHTML=`<span class="inline-confirm">Delete this match for everyone? <button type="button" class="danger" data-yes>Delete</button><button type="button" data-no>Keep</button></span>`;
+    wrap.querySelector("[data-no]").onclick=()=>renderMatches();
+    wrap.querySelector("[data-yes]").onclick=async()=>{try{await db.doc("matches/"+b.dataset.del).delete()}catch(e){showNotice("Couldn't delete: "+(e.message||e.code))}};
+  });
+}
+
+function renderAll(){renderStandings();renderH2H();renderTeams();renderStats();renderMatches();fillPlayerSelects()}
+
+/* ---------- tabs ---------- */
+function showTab(t){
+  document.querySelectorAll(".tabs button").forEach(b=>b.setAttribute("aria-selected",b.dataset.tab===t));
+  document.querySelectorAll("section.panel").forEach(s=>s.hidden=s.id!=="tab-"+t);
+  try{localStorage.setItem("cc_tab",t)}catch{}
+}
+document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>showTab(b.dataset.tab));
+try{const t=localStorage.getItem("cc_tab");if(t&&$("#tab-"+t))showTab(t)}catch{}
+
+function showNotice(msg){const n=$("#notice");n.textContent=msg;n.hidden=!msg}
+
+/* ---------- match form ---------- */
+const statForm=$("#statForm");
+statForm.innerHTML=STATS.map(s=>`<input id="h_${s.k}" type="number" step="any" min="0" inputmode="decimal" aria-label="Home ${esc(s.label)}"><span class="c">${esc(s.label)}</span><input id="a_${s.k}" type="number" step="any" min="0" inputmode="decimal" aria-label="Away ${esc(s.label)}">`).join("");
+
+function fillPlayerSelects(){
+  const opts=`<option value="">Pick…</option>`+settings.players.map(p=>`<option value="${esc(p.id)}">${esc(p.name)}</option>`).join("");
+  for(const id of ["#f_hp","#f_ap"]){const s=$(id),v=s.value;s.innerHTML=opts;s.value=v}
+  const teams=[...new Set(matches.flatMap(m=>[m.home?.team,m.away?.team]).filter(Boolean))].sort();
+  $("#teamList").innerHTML=teams.map(t=>`<option value="${esc(t)}">`).join("");
+}
+function today(){const d=new Date();return new Date(d-d.getTimezoneOffset()*6e4).toISOString().slice(0,10)}
+function openForm(m){
+  editingId=m?.id||null;
+  $("#formTitle").textContent=m?"Edit match":"Add match";
+  $("#matchForm").reset(); fillPlayerSelects();
+  $("#photoStatus").textContent=""; $("#formStatus").textContent="";
+  document.querySelectorAll(".flag").forEach(e=>e.classList.remove("flag"));
+  $("#f_date").value=m?.date||today();
+  if(m){
+    $("#f_hp").value=m.home.player;$("#f_ht").value=m.home.team;$("#f_hg").value=m.home.goals;
+    $("#f_ap").value=m.away.player;$("#f_at").value=m.away.team;$("#f_ag").value=m.away.goals;
+    $("#f_notes").value=m.notes||"";
+    STATS.forEach(s=>{$("#h_"+s.k).value=m.home.stats?.[s.k]??"";$("#a_"+s.k).value=m.away.stats?.[s.k]??""});
+  }
+  $("#matchDlg").showModal();
+}
+$("#addBtn").onclick=()=>openForm(null);
+$("#closeForm").onclick=$("#cancelForm").onclick=()=>$("#matchDlg").close();
+
+$("#matchForm").onsubmit=async e=>{
+  e.preventDefault();
+  if(!db){$("#formStatus").textContent="Sign in to claude.ai to save matches.";return}
+  const hp=$("#f_hp").value,ap=$("#f_ap").value;
+  if(hp===ap){$("#formStatus").textContent="Pick two different players.";$("#formStatus").className="status err";return}
+  const stats=side=>{const o={};STATS.forEach(s=>{const v=$("#"+side+"_"+s.k).value;if(v!=="")o[s.k]=+v});return o};
+  const doc={
+    date:$("#f_date").value,
+    home:{player:hp,team:$("#f_ht").value.trim(),goals:+$("#f_hg").value,stats:stats("h")},
+    away:{player:ap,team:$("#f_at").value.trim(),goals:+$("#f_ag").value,stats:stats("a")},
+    notes:$("#f_notes").value.trim(),
+  };
+  $("#saveBtn").disabled=true;$("#formStatus").className="status";$("#formStatus").textContent="Saving…";
+  try{
+    if(editingId){const old=matches.find(m=>m.id===editingId);await db.doc("matches/"+editingId).set({...doc,createdAt:old?.createdAt||Date.now()})}
+    else await db.collection("matches").add({...doc,createdAt:Date.now()});
+    $("#matchDlg").close();
+  }catch(err){$("#formStatus").className="status err";$("#formStatus").textContent=err.code==="permission_denied"?"You can view but not add matches. Ask for edit access to this page.":"Couldn't save: "+(err.message||err.code)}
+  finally{$("#saveBtn").disabled=false}
+};
+
+/* ---------- read photos with Claude ---------- */
+$("#readBtn").onclick=async()=>{
+  const files=$("#photoInput").files; const st=$("#photoStatus"); st.className="status";
+  if(!sample){st.textContent="Photo reading isn't available here. Fill the form by hand.";return}
+  if(!files.length){st.textContent="Pick one or two photos first.";return}
+  $("#readBtn").disabled=true; st.textContent="Reading photos… this can take up to a minute.";
+  const prompt=`These are phone photos of a TV showing the end of an EA SPORTS FC / FIFA online friendly: a final-score screen and/or a match stats Summary screen.
+The left/first team is HOME, the right/second team is AWAY. On the final-score screen the PlayStation usernames are shown under "Continue series?" (left = home, right = away).
+Reply with only JSON in this exact shape. Use null for anything you cannot read clearly. Numbers must be numbers, percentages without the % sign.
+{"homeTeam":string,"awayTeam":string,"homeGoals":number,"awayGoals":number,"homeUser":string|null,"awayUser":string|null,
+"home":{${STATS.map(s=>`"${s.k}":number|null`).join(",")}},
+"away":{same keys}}
+Key meanings: possession=Possession %, recovery=Ball Recovery Time (Seconds), xg=Expected Goals, tacklesWon=Tackles Won, fouls=Fouls Committed, freeKicks=Free Kicks, penalties=Penalty Kicks, yellows=Yellow Cards, reds=Red Cards, dribblePct/shotAccPct/passAccPct = the three circle percentages (Dribble Success Rate, Shot Accuracy, Pass Accuracy) on each side.
+Team names in normal case, e.g. "FC Barcelona", "Liverpool".`;
+  try{
+    const r=await sample.json(prompt,{images:[...files].slice(0,4)});
+    if(r.homeTeam)$("#f_ht").value=r.homeTeam; if(r.awayTeam)$("#f_at").value=r.awayTeam;
+    if(r.homeGoals!=null)$("#f_hg").value=r.homeGoals; if(r.awayGoals!=null)$("#f_ag").value=r.awayGoals;
+    STATS.forEach(s=>{const hv=r.home?.[s.k],av=r.away?.[s.k];if(typeof hv==="number")$("#h_"+s.k).value=hv;if(typeof av==="number")$("#a_"+s.k).value=av});
+    const map=u=>u?settings.tags[String(u).toLowerCase()]:null;
+    const hp=map(r.homeUser),ap=map(r.awayUser);
+    if(hp)$("#f_hp").value=hp; if(ap)$("#f_ap").value=ap;
+    const missing=[]; if(!hp){$("#f_hp").classList.add("flag");missing.push("home")} if(!ap){$("#f_ap").classList.add("flag");missing.push("away")}
+    st.textContent="Filled in. Check the numbers"+(missing.length?`, then pick the ${missing.join(" and ")} player (highlighted).`:".");
+  }catch(e){
+    st.className="status err";
+    st.textContent=e.code==="not_granted"?"Photo reading was not allowed. Fill the form by hand.":e.code==="rate_limited"?"Too many requests right now. Try again in a minute.":e.code==="invalid_json"?"Couldn't read those photos. Try clearer shots, or fill by hand.":"Couldn't read photos: "+(e.message||e.code);
+  }finally{$("#readBtn").disabled=false}
+};
+["#f_hp","#f_ap"].forEach(id=>$(id).addEventListener("change",e=>e.target.classList.remove("flag")));
+
+/* ---------- players ---------- */
+let draft=null;
+function renderPlayerRows(){
+  $("#playerRows").innerHTML=draft.players.map((p,i)=>`<div class="prow"><input id="pl_${i}" value="${esc(p.name)}" aria-label="Player name"></div>`).join("");
+  draft.players.forEach((p,i)=>$("#pl_"+i).oninput=e=>p.name=e.target.value);
+  $("#tagPlayer").innerHTML=`<option value="">—</option>`+draft.players.map(p=>`<option value="${esc(p.id)}">${esc(p.name||"(unnamed)")}</option>`).join("");
+}
+$("#playersBtn").onclick=()=>{
+  draft=JSON.parse(JSON.stringify(settings)); renderPlayerRows();
+  const t=Object.entries(draft.tags)[0]; $("#tagName").value=t?.[0]||""; $("#tagPlayer").value=t?.[1]||"";
+  $("#playersStatus").textContent=""; $("#playersDlg").showModal();
+};
+$("#closePlayers").onclick=()=>$("#playersDlg").close();
+$("#addPlayer").onclick=()=>{draft.players.push({id:"p"+Date.now().toString(36),name:""});renderPlayerRows();$("#pl_"+(draft.players.length-1)).focus()};
+$("#playersForm").onsubmit=async e=>{
+  e.preventDefault();
+  draft.players=draft.players.filter(p=>p.name.trim()).map(p=>({id:p.id,name:p.name.trim()}));
+  const tn=$("#tagName").value.trim().toLowerCase(),tp=$("#tagPlayer").value;
+  draft.tags={}; if(tn&&tp)draft.tags[tn]=tp;
+  if(!db){$("#playersStatus").textContent="Sign in to save.";return}
+  try{await db.doc("config/settings").set(draft);$("#playersDlg").close()}
+  catch(err){$("#playersStatus").textContent="Couldn't save: "+(err.message||err.code)}
+};
+
+/* ---------- boot ---------- */
+renderAll();
+(async()=>{
+  if(!window.claude){showNotice("Open this page on claude.ai to load your matches.");return}
+  db=await claude.use("db");
+  if(!db){showNotice("Sign in to claude.ai to see and add matches.");return}
+  db.doc("config/settings").onSnapshot(s=>{const d=s.exists&&s.data();if(d&&Array.isArray(d.players))settings={players:d.players,tags:d.tags||{}};renderAll()});
+  db.collection("matches").onSnapshot(s=>{matches=s.docs.map(d=>({id:d.id,...d.data()}));loaded=true;renderAll()},
+    e=>showNotice("Couldn't load matches: "+(e.message||e.code)));
+  sample=await claude.use("sample");
+  if(sample){const lim=await sample.limits().catch(()=>null);if(!lim?.images){sample=null}}
+  if(!sample)$("#photoBox").hidden=true;
+})();
+</script>
