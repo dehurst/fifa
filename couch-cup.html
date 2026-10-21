@@ -2,7 +2,7 @@
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@600;700;800&family=Figtree:wght@400;500;600;700&display=swap">
-<style>
+<style id="css">
 /* Layout: one column scoreboard header, tabbed panels, bottom-sheet match form. */
 :root{
   --bg:#eef2ee; --surface:#ffffff; --sunk:#e3e9e4; --line:#cfd8d1;
@@ -100,10 +100,12 @@ label.f input,label.f select{width:100%}
 .players{display:grid;gap:8px}
 .players .prow{display:flex;gap:8px}
 .players input{flex:1}
+#root.ro .w{display:none!important}
 @media (max-width:520px){.who{grid-template-columns:1fr}h1{font-size:34px}}
 @media (prefers-reduced-motion:no-preference){.tabs button{transition:color .15s,border-color .15s}}
 </style>
 
+<template id="shell">
 <div class="wrap">
   <header class="top">
     <div>
@@ -111,8 +113,8 @@ label.f input,label.f select{width:100%}
       <h1>Couch Cup</h1>
     </div>
     <div style="display:flex;gap:8px">
-      <button id="playersBtn" type="button">Players</button>
-      <button id="addBtn" class="primary" type="button">Add match</button>
+      <button id="playersBtn" class="w" type="button">Players</button>
+      <button id="addBtn" class="primary w" type="button">Add match</button>
     </div>
   </header>
 
@@ -197,8 +199,10 @@ label.f input,label.f select{width:100%}
     <div style="display:flex;justify-content:flex-end"><button type="submit" class="primary">Save players</button></div>
   </form>
 </dialog>
-
-<script>
+</template>
+<div id="root" class="ro"></div>
+<script type="application/json" id="data">{"settings":{"players":[{"id":"dad","name":"Daniel"},{"id":"asher","name":"Asher"},{"id":"bennett","name":"Bennett"}],"tags":{"bucksavage1979":"asher"}},"matches":[{"id":"m-2026-10-21-1","date":"2026-10-21","createdAt":1792540000000,"notes":"","home":{"player":"asher","team":"FC Barcelona","goals":2,"stats":{"possession":53,"recovery":6,"shots":12,"xg":1.77,"passes":141,"tackles":36,"tacklesWon":9,"interceptions":22,"saves":5,"fouls":3,"offsides":0,"corners":5,"freeKicks":2,"penalties":0,"yellows":3,"dribblePct":82,"shotAccPct":83,"passAccPct":84}},"away":{"player":"dad","team":"Liverpool","goals":4,"stats":{"possession":47,"recovery":8,"shots":13,"xg":3.71,"passes":155,"tackles":20,"tacklesWon":16,"interceptions":14,"saves":8,"fouls":0,"offsides":2,"corners":7,"freeKicks":2,"penalties":1,"yellows":0,"dribblePct":89,"shotAccPct":69,"passAccPct":78}}}]}</script>
+<script id="app">
 const STATS = [
   {k:"possession",label:"Possession %",hi:true},
   {k:"recovery",label:"Ball recovery time (s)",hi:false,dec:true},
@@ -220,13 +224,16 @@ const STATS = [
   {k:"shotAccPct",label:"Shot accuracy %",hi:true},
   {k:"passAccPct",label:"Pass accuracy %",hi:true},
 ];
-const DEFAULT_SETTINGS = {players:[{id:"dad",name:"Dad"},{id:"asher",name:"Asher"},{id:"bennett",name:"Bennett"}],tags:{"bucksavage1979":"asher"}};
-
-let db=null, sample=null;
-let settings = DEFAULT_SETTINGS;
-let matches = [];
-let loaded = false;
-let editingId = null;
+// The match data lives inside this page. Saving publishes a new copy of the page,
+// so anyone with the link can read it without signing in.
+const APP_SRC=document.currentScript.textContent;
+const CSS_SRC=document.getElementById("css").textContent;
+const SHELL_SRC=document.getElementById("shell").innerHTML;
+document.getElementById("root").append(document.getElementById("shell").content.cloneNode(true));
+let state;
+try{state=JSON.parse(document.getElementById("data").textContent)}catch{state={settings:{players:[],tags:{}},matches:[]}}
+let settings=state.settings, matches=state.matches;
+let artifact=null, sample=null, editingId=null;
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const pname = id => (settings.players.find(p=>p.id===id)||{}).name || id || "?";
@@ -380,14 +387,14 @@ function renderMatches(){
       </div>
       ${m.notes?`<div style="font-size:14px">${esc(m.notes)}</div>`:""}
       ${hasStats?`<details><summary class="muted" style="cursor:pointer;font-size:14px">Match stats</summary><div class="statgrid" style="margin-top:10px">${statRows}</div></details>`:""}
-      <div class="mactions"><button type="button" data-edit="${esc(m.id)}">Edit</button><span class="delwrap"><button type="button" class="danger" data-del="${esc(m.id)}">Delete</button></span></div>
+      <div class="mactions w"><button type="button" data-edit="${esc(m.id)}">Edit</button><span class="delwrap"><button type="button" class="danger" data-del="${esc(m.id)}">Delete</button></span></div>
     </div>`}).join("");
   el.querySelectorAll("[data-edit]").forEach(b=>b.onclick=()=>openForm(matches.find(m=>m.id===b.dataset.edit)));
   el.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>{
     const wrap=b.parentElement;
     wrap.innerHTML=`<span class="inline-confirm">Delete this match for everyone? <button type="button" class="danger" data-yes>Delete</button><button type="button" data-no>Keep</button></span>`;
     wrap.querySelector("[data-no]").onclick=()=>renderMatches();
-    wrap.querySelector("[data-yes]").onclick=async()=>{try{await db.doc("matches/"+b.dataset.del).delete()}catch(e){showNotice("Couldn't delete: "+(e.message||e.code))}};
+    wrap.querySelector("[data-yes]").onclick=async()=>{const err=await save({...state,matches:matches.filter(m=>m.id!==b.dataset.del)});if(err)showNotice(err)};
   });
 }
 
@@ -435,7 +442,6 @@ $("#closeForm").onclick=$("#cancelForm").onclick=()=>$("#matchDlg").close();
 
 $("#matchForm").onsubmit=async e=>{
   e.preventDefault();
-  if(!db){$("#formStatus").textContent="Sign in to claude.ai to save matches.";return}
   const hp=$("#f_hp").value,ap=$("#f_ap").value;
   if(hp===ap){$("#formStatus").textContent="Pick two different players.";$("#formStatus").className="status err";return}
   const stats=side=>{const o={};STATS.forEach(s=>{const v=$("#"+side+"_"+s.k).value;if(v!=="")o[s.k]=+v});return o};
@@ -446,12 +452,12 @@ $("#matchForm").onsubmit=async e=>{
     notes:$("#f_notes").value.trim(),
   };
   $("#saveBtn").disabled=true;$("#formStatus").className="status";$("#formStatus").textContent="Saving…";
-  try{
-    if(editingId){const old=matches.find(m=>m.id===editingId);await db.doc("matches/"+editingId).set({...doc,createdAt:old?.createdAt||Date.now()})}
-    else await db.collection("matches").add({...doc,createdAt:Date.now()});
-    $("#matchDlg").close();
-  }catch(err){$("#formStatus").className="status err";$("#formStatus").textContent=err.code==="permission_denied"?"You can view but not add matches. Ask for edit access to this page.":"Couldn't save: "+(err.message||err.code)}
-  finally{$("#saveBtn").disabled=false}
+  const old=editingId&&matches.find(m=>m.id===editingId);
+  const rec={id:old?old.id:"m"+Date.now().toString(36),createdAt:old?.createdAt||Date.now(),...doc};
+  const next={...state,matches:old?matches.map(m=>m.id===old.id?rec:m):[...matches,rec]};
+  const err=await save(next);
+  if(err){$("#formStatus").className="status err";$("#formStatus").textContent=err}
+  $("#saveBtn").disabled=false;
 };
 
 /* ---------- read photos with Claude ---------- */
@@ -504,20 +510,41 @@ $("#playersForm").onsubmit=async e=>{
   draft.players=draft.players.filter(p=>p.name.trim()).map(p=>({id:p.id,name:p.name.trim()}));
   const tn=$("#tagName").value.trim().toLowerCase(),tp=$("#tagPlayer").value;
   draft.tags={}; if(tn&&tp)draft.tags[tn]=tp;
-  if(!db){$("#playersStatus").textContent="Sign in to save.";return}
-  try{await db.doc("config/settings").set(draft);$("#playersDlg").close()}
-  catch(err){$("#playersStatus").textContent="Couldn't save: "+(err.message||err.code)}
+  $("#playersStatus").textContent="Saving…";
+  const err=await save({...state,settings:draft});
+  if(err)$("#playersStatus").textContent=err;
 };
+
+/* ---------- saving ---------- */
+const RESET=':root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}';
+const END='</'+'script>';
+function buildDoc(next){
+  const json=JSON.stringify(next).replace(/</g,"\\u003c");
+  return '<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>'+RESET+'</style></head><body>'
+    +'\n<title>Couch Cup</title>\n<meta name="claude:viewport-fit-sides" content="cover">\n<link rel="preconnect" href="https://fonts.googleapis.com">\n<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@600;700;800&family=Figtree:wght@400;500;600;700&display=swap">\n'
+    +'<style id="css">'+CSS_SRC+'</style>\n<template id="shell">'+SHELL_SRC+'</template>\n<div id="root" class="ro"></div>\n'
+    +'<script type="application/json" id="data">'+json+END+'\n<script id="app">'+APP_SRC+END+'\n</body></html>';
+}
+// Returns an error message, or nothing on success (the page then reloads with the new data).
+async function save(next){
+  if(!artifact)return "Only people with edit access can save. Sign in to claude.ai first.";
+  try{await artifact.publish(buildDoc(next));return ""}
+  catch(e){
+    if(e.code==="conflict")return "Someone else just saved. The page is reloading with their change; add yours again after.";
+    if(e.code==="not_writer"||e.code==="not_granted"){$("#root").classList.add("ro");return "You can view this page but not change it. Ask Daniel for edit access."}
+    if(e.code==="rate_limited")return "Saving too fast. Wait a few seconds and try again.";
+    return "Couldn't save: "+(e.message||e.code);
+  }
+}
 
 /* ---------- boot ---------- */
 renderAll();
 (async()=>{
-  if(!window.claude){showNotice("Open this page on claude.ai to load your matches.");return}
-  db=await claude.use("db");
-  if(!db){showNotice("Sign in to claude.ai to see and add matches.");return}
-  db.doc("config/settings").onSnapshot(s=>{const d=s.exists&&s.data();if(d&&Array.isArray(d.players))settings={players:d.players,tags:d.tags||{}};renderAll()});
-  db.collection("matches").onSnapshot(s=>{matches=s.docs.map(d=>({id:d.id,...d.data()}));loaded=true;renderAll()},
-    e=>showNotice("Couldn't load matches: "+(e.message||e.code)));
+  if(!window.claude)return;
+  const [a,u]=await Promise.all([claude.use("artifact"),claude.use("user")]);
+  const canEdit=u?await u.canEdit().catch(()=>false):false;
+  if(a&&canEdit){artifact=a;$("#root").classList.remove("ro")}
+  else return;
   sample=await claude.use("sample");
   if(sample){const lim=await sample.limits().catch(()=>null);if(!lim?.images){sample=null}}
   if(!sample)$("#photoBox").hidden=true;
