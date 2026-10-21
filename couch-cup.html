@@ -80,19 +80,44 @@ select,input,textarea{font:inherit;color:var(--ink);background:var(--surface);bo
 dialog{border:none;padding:0;background:transparent;max-width:none;max-height:none;width:100%;height:100%}
 dialog::backdrop{background:rgba(5,12,9,.55)}
 .sheet{background:var(--bg);color:var(--ink);max-width:640px;margin:0 auto;min-height:100%;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:calc(16px + env(safe-area-inset-top,0px)) calc(24px + env(safe-area-inset-bottom,0px));display:grid;gap:16px;align-content:start}
-@media (min-width:700px){dialog{height:auto}.sheet{min-height:0;margin:5vh auto;border-radius:16px;border:1px solid var(--line)}}
+@media (min-width:700px){dialog{height:auto}.sheet{min-height:0;margin:5vh auto;border-radius:16px;border:1px solid var(--line)}#matchForm{max-height:90vh;overflow:auto}}
 .sheet header{display:flex;justify-content:space-between;align-items:center;gap:10px}
-.who{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.who fieldset{border:1px solid var(--line);border-radius:12px;padding:12px;display:grid;gap:8px;margin:0;min-width:0;background:var(--surface)}
-.who legend{font-family:var(--display);font-weight:700;text-transform:uppercase;padding:0 4px}
 label.f{display:grid;gap:4px;font-size:13px;color:var(--muted);font-weight:600}
 label.f input,label.f select{width:100%}
-.goals{font-family:var(--display);font-size:28px;font-weight:800;text-align:center}
-.sform{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:6px 8px;align-items:center}
-.sform input{text-align:center;width:100%}
-.sform .c{font-size:13px;text-align:center;color:var(--muted);font-weight:600}
+/* match form */
+.sheet input,.sheet select,.sheet textarea{font-size:16px} /* 16px stops iPhone zooming in on focus */
+#matchForm{gap:14px;padding-block:0}
+.sheet-head{position:sticky;top:0;z-index:2;background:var(--bg);padding-block:calc(10px + env(safe-area-inset-top,0px)) 10px;border-bottom:1px solid var(--line)}
+.sheet-head button{padding:7px 12px}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .photo{display:grid;gap:8px}
-.photo .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.photo-btn{display:flex;align-items:center;gap:12px;padding:14px;border:1.5px dashed var(--pitch);border-radius:12px;background:var(--surface);cursor:pointer;min-width:0}
+.photo-btn svg{flex:none;color:var(--pitch)}
+.photo-btn b{display:block;color:var(--ink)}
+.photo-btn small{display:block;color:var(--muted);font-size:13px}
+.photo-btn.busy{opacity:.65;pointer-events:none}
+.photo:has(input:focus-visible) .photo-btn{outline:2px solid var(--amber);outline-offset:2px}
+.matchup{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px 10px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px}
+.matchup .col{display:grid;gap:8px;min-width:0}
+.matchup select,.matchup input{width:100%}
+.side-tag{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.col.r .side-tag{text-align:right}
+.scoreline{grid-column:1/-1;display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:10px;margin-top:4px}
+.scoreline input{font-family:var(--display);font-size:34px;font-weight:800;text-align:center;height:58px;padding:2px}
+.scoreline input::placeholder{color:var(--line)}
+.scoreline span{font-family:var(--display);font-size:28px;color:var(--muted)}
+details.stats{padding:0}
+details.stats summary{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:14px 16px;cursor:pointer;font-weight:600;list-style:none}
+details.stats summary::-webkit-details-marker{display:none}
+details.stats summary .muted{font-weight:500;font-size:14px;margin-left:auto}
+details.stats summary::after{content:"+";font-size:22px;line-height:1;color:var(--muted)}
+details.stats[open] summary::after{content:"\2212"}
+.sform{display:grid;grid-template-columns:72px minmax(0,1fr) 72px;gap:6px 8px;align-items:center;padding:0 12px 14px}
+.sform input{text-align:center;width:100%;height:40px;padding:4px}
+.sform .c{font-size:13px;text-align:center;color:var(--muted);font-weight:600;line-height:1.2}
+.sform .sh{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-bottom:2px}
+.savebar{position:sticky;bottom:0;z-index:2;background:var(--bg);border-top:1px solid var(--line);padding-block:10px calc(10px + env(safe-area-inset-bottom,0px));display:grid;gap:6px}
+.savebar button{width:100%;min-height:48px;font-size:16px}
 .status{font-size:14px}
 .status.err{color:var(--loss)}
 .flag{outline:2px solid var(--amber)}
@@ -101,7 +126,7 @@ label.f input,label.f select{width:100%}
 .players .prow{display:flex;gap:8px}
 .players input{flex:1}
 #root.ro .w{display:none!important}
-@media (max-width:520px){.who{grid-template-columns:1fr}h1{font-size:34px}}
+@media (max-width:520px){h1{font-size:34px}}
 @media (prefers-reduced-motion:no-preference){.tabs button{transition:color .15s,border-color .15s}}
 </style>
 
@@ -136,49 +161,50 @@ label.f input,label.f select{width:100%}
 
 <dialog id="matchDlg">
   <form class="sheet" id="matchForm">
-    <header>
+    <header class="sheet-head">
       <h2 id="formTitle">Add match</h2>
       <button type="button" id="closeForm">Close</button>
     </header>
 
-    <div class="card photo" id="photoBox">
-      <div><strong>Fill from photos</strong> <span class="muted">(optional)</span></div>
-      <div class="muted" style="font-size:14px">Pick the final-score photo and the stats summary photo. Claude reads them and fills the form. Check the numbers before saving.</div>
-      <div class="row">
-        <input type="file" id="photoInput" accept="image/*" multiple>
-        <button type="button" id="readBtn">Read photos</button>
-      </div>
+    <div class="photo" id="photoBox">
+      <input type="file" id="photoInput" class="vh" accept="image/*" multiple>
+      <label class="photo-btn" for="photoInput" id="photoBtn">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13.5" r="3.5"/></svg>
+        <span><b>Fill from photos</b><small>Pick the score screen and the stats screen</small></span>
+      </label>
       <div class="status" id="photoStatus" aria-live="polite"></div>
     </div>
 
-    <label class="f">Date <input type="date" id="f_date" required></label>
-
-    <div class="who">
-      <fieldset>
-        <legend>Home (left)</legend>
-        <label class="f">Player <select id="f_hp" required></select></label>
-        <label class="f">Team <input id="f_ht" list="teamList" required autocomplete="off"></label>
-        <label class="f">Goals <input id="f_hg" class="goals" type="number" min="0" inputmode="numeric" required></label>
-      </fieldset>
-      <fieldset>
-        <legend>Away (right)</legend>
-        <label class="f">Player <select id="f_ap" required></select></label>
-        <label class="f">Team <input id="f_at" list="teamList" required autocomplete="off"></label>
-        <label class="f">Goals <input id="f_ag" class="goals" type="number" min="0" inputmode="numeric" required></label>
-      </fieldset>
+    <div class="matchup">
+      <div class="col">
+        <div class="side-tag">Home · left</div>
+        <select id="f_hp" required aria-label="Home player"></select>
+        <input id="f_ht" list="teamList" required autocomplete="off" placeholder="Team" aria-label="Home team">
+      </div>
+      <div class="col r">
+        <div class="side-tag">Away · right</div>
+        <select id="f_ap" required aria-label="Away player"></select>
+        <input id="f_at" list="teamList" required autocomplete="off" placeholder="Team" aria-label="Away team">
+      </div>
+      <div class="scoreline">
+        <input id="f_hg" type="number" min="0" inputmode="numeric" required placeholder="0" aria-label="Home goals">
+        <span>–</span>
+        <input id="f_ag" type="number" min="0" inputmode="numeric" required placeholder="0" aria-label="Away goals">
+      </div>
     </div>
     <datalist id="teamList"></datalist>
 
-    <div class="card">
-      <div class="eyebrow" style="margin-bottom:10px">Match stats (all optional)</div>
+    <label class="f">Date <input type="date" id="f_date" required></label>
+
+    <details class="card stats" id="statsBox">
+      <summary>Match stats <span class="muted" id="statCount">optional</span></summary>
       <div class="sform" id="statForm"></div>
-    </div>
+    </details>
 
     <label class="f">Notes <textarea id="f_notes" rows="2" placeholder="Last-minute winner, rage quit, etc."></textarea></label>
 
-    <div class="status" id="formStatus" aria-live="polite"></div>
-    <div style="display:flex;gap:10px;justify-content:flex-end">
-      <button type="button" id="cancelForm">Cancel</button>
+    <div class="savebar">
+      <div class="status" id="formStatus" aria-live="polite"></div>
       <button type="submit" class="primary" id="saveBtn">Save match</button>
     </div>
   </form>
@@ -412,7 +438,7 @@ function showNotice(msg){const n=$("#notice");n.textContent=msg;n.hidden=!msg}
 
 /* ---------- match form ---------- */
 const statForm=$("#statForm");
-statForm.innerHTML=STATS.map(s=>`<input id="h_${s.k}" type="number" step="any" min="0" inputmode="decimal" aria-label="Home ${esc(s.label)}"><span class="c">${esc(s.label)}</span><input id="a_${s.k}" type="number" step="any" min="0" inputmode="decimal" aria-label="Away ${esc(s.label)}">`).join("");
+statForm.innerHTML=`<span class="sh" id="sh_home">Home</span><span></span><span class="sh" id="sh_away">Away</span>`+STATS.map(s=>`<input id="h_${s.k}" type="number" step="any" min="0" inputmode="decimal" aria-label="Home ${esc(s.label)}"><span class="c">${esc(s.label)}</span><input id="a_${s.k}" type="number" step="any" min="0" inputmode="decimal" aria-label="Away ${esc(s.label)}">`).join("");
 
 function fillPlayerSelects(){
   const opts=`<option value="">Pick…</option>`+settings.players.map(p=>`<option value="${esc(p.id)}">${esc(p.name)}</option>`).join("");
@@ -420,6 +446,15 @@ function fillPlayerSelects(){
   const teams=[...new Set(matches.flatMap(m=>[m.home?.team,m.away?.team]).filter(Boolean))].sort();
   $("#teamList").innerHTML=teams.map(t=>`<option value="${esc(t)}">`).join("");
 }
+// Column headers and the "x of 19 filled" count for the stats section.
+function refreshStatsUI(){
+  $("#sh_home").textContent=$("#f_ht").value.trim()||"Home";
+  $("#sh_away").textContent=$("#f_at").value.trim()||"Away";
+  const n=STATS.filter(s=>$("#h_"+s.k).value!==""||$("#a_"+s.k).value!=="").length;
+  $("#statCount").textContent=n?`${n} of ${STATS.length} filled`:"optional";
+}
+["#f_ht","#f_at"].forEach(id=>$(id).addEventListener("input",refreshStatsUI));
+statForm.addEventListener("input",refreshStatsUI);
 function today(){const d=new Date();return new Date(d-d.getTimezoneOffset()*6e4).toISOString().slice(0,10)}
 function openForm(m){
   editingId=m?.id||null;
@@ -434,10 +469,12 @@ function openForm(m){
     $("#f_notes").value=m.notes||"";
     STATS.forEach(s=>{$("#h_"+s.k).value=m.home.stats?.[s.k]??"";$("#a_"+s.k).value=m.away.stats?.[s.k]??""});
   }
+  refreshStatsUI();
+  $("#statsBox").open=false;
   $("#matchDlg").showModal();
 }
 $("#addBtn").onclick=()=>openForm(null);
-$("#closeForm").onclick=$("#cancelForm").onclick=()=>$("#matchDlg").close();
+$("#closeForm").onclick=()=>$("#matchDlg").close();
 
 $("#matchForm").onsubmit=async e=>{
   e.preventDefault();
@@ -460,11 +497,11 @@ $("#matchForm").onsubmit=async e=>{
 };
 
 /* ---------- read photos with Claude ---------- */
-$("#readBtn").onclick=async()=>{
+$("#photoInput").onchange=async()=>{
   const files=$("#photoInput").files; const st=$("#photoStatus"); st.className="status";
   if(!sample){st.textContent="Photo reading isn't available here. Fill the form by hand.";return}
-  if(!files.length){st.textContent="Pick one or two photos first.";return}
-  $("#readBtn").disabled=true; st.textContent="Reading photos… this can take up to a minute.";
+  if(!files.length)return;
+  $("#photoBtn").classList.add("busy"); st.textContent=`Reading ${files.length} photo${files.length>1?"s":""}… this can take up to a minute.`;
   const prompt=`These are phone photos of a TV showing the end of an EA SPORTS FC / FIFA online friendly: a final-score screen and/or a match stats Summary screen.
 The left/first team is HOME, the right/second team is AWAY. On the final-score screen the PlayStation usernames are shown under "Continue series?" (left = home, right = away).
 Reply with only JSON in this exact shape. Use null for anything you cannot read clearly. Numbers must be numbers, percentages without the % sign.
@@ -482,11 +519,12 @@ Team names in normal case, e.g. "FC Barcelona", "Liverpool".`;
     const hp=map(r.homeUser),ap=map(r.awayUser);
     if(hp)$("#f_hp").value=hp; if(ap)$("#f_ap").value=ap;
     const missing=[]; if(!hp){$("#f_hp").classList.add("flag");missing.push("home")} if(!ap){$("#f_ap").classList.add("flag");missing.push("away")}
+    refreshStatsUI(); if(STATS.some(s=>$("#h_"+s.k).value!==""))$("#statsBox").open=true;
     st.textContent="Filled in. Check the numbers"+(missing.length?`, then pick the ${missing.join(" and ")} player (highlighted).`:".");
   }catch(e){
     st.className="status err";
     st.textContent=e.code==="not_granted"?"Photo reading was not allowed. Fill the form by hand.":e.code==="rate_limited"?"Too many requests right now. Try again in a minute.":e.code==="invalid_json"?"Couldn't read those photos. Try clearer shots, or fill by hand.":"Couldn't read photos: "+(e.message||e.code);
-  }finally{$("#readBtn").disabled=false}
+  }finally{$("#photoBtn").classList.remove("busy");$("#photoInput").value=""}
 };
 ["#f_hp","#f_ap"].forEach(id=>$(id).addEventListener("change",e=>e.target.classList.remove("flag")));
 
